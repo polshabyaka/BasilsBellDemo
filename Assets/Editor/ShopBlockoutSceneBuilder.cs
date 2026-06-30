@@ -75,7 +75,7 @@ public static class ShopBlockoutSceneBuilder
         GameObject blockout = CreateGroup("_Blockout", root.transform);
         GameObject lighting = CreateGroup("_Lighting", root.transform);
         CreateGroup("_UI", root.transform);
-        CreateGroup("_Systems", root.transform);
+        GameObject systems = CreateGroup("_Systems", root.transform);
 
         BuildRoom(blockout.transform, floorMaterial, wallMaterial);
         BuildWorkTable(blockout.transform, tableMaterial);
@@ -84,8 +84,9 @@ public static class ShopBlockoutSceneBuilder
         BuildPersonalCorner(blockout.transform, personalMaterial, trimMaterial);
         BuildForestExit(blockout.transform, doorMaterial, trimMaterial);
         BuildLighting(lighting.transform);
-        BuildCameraAnchors(cameraAnchors.transform);
-        BuildMainCamera(cameras.transform);
+        CameraAnchorSet anchors = BuildCameraAnchors(cameraAnchors.transform);
+        Transform mainCameraTransform = BuildMainCamera(cameras.transform);
+        BuildCameraNavigator(systems.transform, mainCameraTransform, anchors);
 
         RenderSettings.ambientMode = AmbientMode.Flat;
         RenderSettings.ambientLight = new Color(0.45f, 0.43f, 0.39f);
@@ -167,17 +168,20 @@ public static class ShopBlockoutSceneBuilder
         light.intensity = 1.1f;
     }
 
-    private static void BuildCameraAnchors(Transform parent)
+    private static CameraAnchorSet BuildCameraAnchors(Transform parent)
     {
-        CreateCameraAnchor("CameraAnchor_Overview", parent, new Vector3(0f, 4.3f, -7.15f), new Vector3(0f, 1.15f, 0.9f));
-        CreateCameraAnchor("CameraAnchor_WorkTable", parent, new Vector3(-1.35f, 2.35f, -3.25f), new Vector3(-1.35f, 0.9f, 0.05f));
-        CreateCameraAnchor("CameraAnchor_Shelves", parent, new Vector3(-2.8f, 2.1f, -0.8f), new Vector3(-3.2f, 1.45f, 3.35f));
-        CreateCameraAnchor("CameraAnchor_Counter", parent, new Vector3(3.35f, 2.25f, -4.0f), new Vector3(2.45f, 1.05f, -1.25f));
-        CreateCameraAnchor("CameraAnchor_PersonalCorner", parent, new Vector3(-3.85f, 1.7f, -3.65f), new Vector3(-3.75f, 0.65f, -2.15f));
-        CreateCameraAnchor("CameraAnchor_ForestExit", parent, new Vector3(2.1f, 2.0f, 0.9f), new Vector3(3.15f, 1.25f, 3.95f));
+        return new CameraAnchorSet
+        {
+            Overview = CreateCameraAnchor("CameraAnchor_Overview", parent, new Vector3(0f, 4.3f, -7.15f), new Vector3(0f, 1.15f, 0.9f)).transform,
+            WorkTable = CreateCameraAnchor("CameraAnchor_WorkTable", parent, new Vector3(-1.35f, 2.35f, -3.25f), new Vector3(-1.35f, 0.9f, 0.05f)).transform,
+            Shelves = CreateCameraAnchor("CameraAnchor_Shelves", parent, new Vector3(-2.8f, 2.1f, -0.8f), new Vector3(-3.2f, 1.45f, 3.35f)).transform,
+            Counter = CreateCameraAnchor("CameraAnchor_Counter", parent, new Vector3(3.35f, 2.25f, -4.0f), new Vector3(2.45f, 1.05f, -1.25f)).transform,
+            PersonalCorner = CreateCameraAnchor("CameraAnchor_PersonalCorner", parent, new Vector3(-3.85f, 1.7f, -3.65f), new Vector3(-3.75f, 0.65f, -2.15f)).transform,
+            ForestExit = CreateCameraAnchor("CameraAnchor_ForestExit", parent, new Vector3(2.1f, 2.0f, 0.9f), new Vector3(3.15f, 1.25f, 3.95f)).transform
+        };
     }
 
-    private static void BuildMainCamera(Transform parent)
+    private static Transform BuildMainCamera(Transform parent)
     {
         GameObject cameraObject = new GameObject("Main Camera");
         cameraObject.tag = "MainCamera";
@@ -191,6 +195,26 @@ public static class ShopBlockoutSceneBuilder
         camera.clearFlags = CameraClearFlags.Skybox;
 
         cameraObject.AddComponent<AudioListener>();
+
+        return cameraObject.transform;
+    }
+
+    private static void BuildCameraNavigator(Transform parent, Transform mainCameraTransform, CameraAnchorSet anchors)
+    {
+        GameObject navigatorObject = CreateGroup("CameraNavigator_System", parent);
+        CameraNavigator navigator = navigatorObject.AddComponent<CameraNavigator>();
+
+        SerializedObject serializedNavigator = new SerializedObject(navigator);
+        serializedNavigator.FindProperty("mainCameraTransform").objectReferenceValue = mainCameraTransform;
+        serializedNavigator.FindProperty("overviewAnchor").objectReferenceValue = anchors.Overview;
+        serializedNavigator.FindProperty("workTableAnchor").objectReferenceValue = anchors.WorkTable;
+        serializedNavigator.FindProperty("shelvesAnchor").objectReferenceValue = anchors.Shelves;
+        serializedNavigator.FindProperty("counterAnchor").objectReferenceValue = anchors.Counter;
+        serializedNavigator.FindProperty("personalCornerAnchor").objectReferenceValue = anchors.PersonalCorner;
+        serializedNavigator.FindProperty("forestExitAnchor").objectReferenceValue = anchors.ForestExit;
+        serializedNavigator.FindProperty("transitionDuration").floatValue = 0.65f;
+        serializedNavigator.FindProperty("enableDebugNumberKeys").boolValue = true;
+        serializedNavigator.ApplyModifiedPropertiesWithoutUndo();
     }
 
     private static GameObject CreateCameraAnchor(string name, Transform parent, Vector3 position, Vector3 target)
@@ -291,5 +315,15 @@ public static class ShopBlockoutSceneBuilder
         {
             AssetDatabase.CreateFolder(parentFolder, folderName);
         }
+    }
+
+    private struct CameraAnchorSet
+    {
+        public Transform Overview;
+        public Transform WorkTable;
+        public Transform Shelves;
+        public Transform Counter;
+        public Transform PersonalCorner;
+        public Transform ForestExit;
     }
 }
