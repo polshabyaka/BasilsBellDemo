@@ -174,6 +174,26 @@ If Unity errors appear:
 3. Suggest the smallest fix.
 4. Avoid rewriting unrelated systems.
 
+## Unity Scene Editing Safety Rules
+
+Do not directly edit `.unity`, `.prefab`, `.mat`, `.asset`, or other Unity serialized YAML files as plain text unless the user explicitly asks for it.
+
+For scene setup or hierarchy changes, prefer one of these approaches:
+
+1. Create a small Unity Editor menu tool that performs changes through Unity Editor APIs.
+2. Ask the user to make simple Inspector/Hierarchy setup manually.
+3. Create runtime scripts only and provide clear Inspector assignment instructions.
+
+When creating Editor tools:
+- make them idempotent where possible;
+- use clear menu names;
+- preserve world position and rotation when reparenting objects;
+- do not regenerate or overwrite scenes unless the user explicitly confirms;
+- never silently delete existing scene objects;
+- always list what the tool will create, move, or modify.
+
+Avoid modifying Unity scene YAML directly, because broken parent-child references can corrupt scene hierarchy.
+
 ## Output Format for Codex
 
 After completing a task, respond with:

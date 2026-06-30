@@ -71,7 +71,7 @@ public static class ShopBlockoutSceneBuilder
         GameObject root = CreateGroup("_Scene");
         GameObject cameras = CreateGroup("_Cameras", root.transform);
         GameObject cameraAnchors = CreateGroup("_CameraAnchors", root.transform);
-        CreateGroup("_Hotspots", root.transform);
+        GameObject hotspots = CreateGroup("_Hotspots", root.transform);
         GameObject blockout = CreateGroup("_Blockout", root.transform);
         GameObject lighting = CreateGroup("_Lighting", root.transform);
         CreateGroup("_UI", root.transform);
@@ -86,7 +86,8 @@ public static class ShopBlockoutSceneBuilder
         BuildLighting(lighting.transform);
         CameraAnchorSet anchors = BuildCameraAnchors(cameraAnchors.transform);
         Transform mainCameraTransform = BuildMainCamera(cameras.transform);
-        BuildCameraNavigator(systems.transform, mainCameraTransform, anchors);
+        CameraNavigator cameraNavigator = BuildCameraNavigator(systems.transform, mainCameraTransform, anchors);
+        BuildHotspots(hotspots.transform, cameraNavigator, anchors, doorMaterial);
 
         RenderSettings.ambientMode = AmbientMode.Flat;
         RenderSettings.ambientLight = new Color(0.45f, 0.43f, 0.39f);
@@ -199,7 +200,7 @@ public static class ShopBlockoutSceneBuilder
         return cameraObject.transform;
     }
 
-    private static void BuildCameraNavigator(Transform parent, Transform mainCameraTransform, CameraAnchorSet anchors)
+    private static CameraNavigator BuildCameraNavigator(Transform parent, Transform mainCameraTransform, CameraAnchorSet anchors)
     {
         GameObject navigatorObject = CreateGroup("CameraNavigator_System", parent);
         CameraNavigator navigator = navigatorObject.AddComponent<CameraNavigator>();
@@ -215,6 +216,36 @@ public static class ShopBlockoutSceneBuilder
         serializedNavigator.FindProperty("transitionDuration").floatValue = 0.65f;
         serializedNavigator.FindProperty("enableDebugNumberKeys").boolValue = true;
         serializedNavigator.ApplyModifiedPropertiesWithoutUndo();
+
+        return navigator;
+    }
+
+    private static void BuildHotspots(Transform parent, CameraNavigator cameraNavigator, CameraAnchorSet anchors, Material hotspotMaterial)
+    {
+        CreateHotspot("Hotspot_WorkTable", parent, new Vector3(-1.35f, 1.25f, 0.05f), new Vector3(3.0f, 0.35f, 1.6f), cameraNavigator, anchors.WorkTable, hotspotMaterial);
+        CreateHotspot("Hotspot_Shelves", parent, new Vector3(-3.2f, 1.45f, 3.3f), new Vector3(2.4f, 2.2f, 0.5f), cameraNavigator, anchors.Shelves, hotspotMaterial);
+        CreateHotspot("Hotspot_Counter", parent, new Vector3(2.45f, 1.3f, -1.25f), new Vector3(3.3f, 0.35f, 1.2f), cameraNavigator, anchors.Counter, hotspotMaterial);
+        CreateHotspot("Hotspot_PersonalCorner", parent, new Vector3(-3.75f, 0.5f, -2.15f), new Vector3(1.9f, 0.25f, 1.5f), cameraNavigator, anchors.PersonalCorner, hotspotMaterial);
+        CreateHotspot("Hotspot_ForestExit", parent, new Vector3(3.15f, 1.25f, 3.85f), new Vector3(1.7f, 2.5f, 0.3f), cameraNavigator, anchors.ForestExit, hotspotMaterial);
+    }
+
+    private static void CreateHotspot(string name, Transform parent, Vector3 localPosition, Vector3 localScale, CameraNavigator cameraNavigator, Transform targetAnchor, Material material)
+    {
+        GameObject hotspot = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        hotspot.name = name;
+        hotspot.transform.SetParent(parent, false);
+        hotspot.transform.localPosition = localPosition;
+        hotspot.transform.localRotation = Quaternion.identity;
+        hotspot.transform.localScale = localScale;
+
+        Renderer renderer = hotspot.GetComponent<Renderer>();
+        renderer.sharedMaterial = material;
+
+        CameraHotspot cameraHotspot = hotspot.AddComponent<CameraHotspot>();
+        SerializedObject serializedHotspot = new SerializedObject(cameraHotspot);
+        serializedHotspot.FindProperty("cameraNavigator").objectReferenceValue = cameraNavigator;
+        serializedHotspot.FindProperty("targetAnchor").objectReferenceValue = targetAnchor;
+        serializedHotspot.ApplyModifiedPropertiesWithoutUndo();
     }
 
     private static GameObject CreateCameraAnchor(string name, Transform parent, Vector3 position, Vector3 target)
