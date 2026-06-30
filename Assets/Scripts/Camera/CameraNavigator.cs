@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Serialization;
+using UnityEngine.UI;
 
 public class CameraNavigator : MonoBehaviour
 {
@@ -17,6 +18,7 @@ public class CameraNavigator : MonoBehaviour
     [SerializeField, Range(0f, 89f)] private float maxPitchUp = 35f;
     [SerializeField, Range(0f, 89f)] private float maxPitchDown = 35f;
     [SerializeField, FormerlySerializedAs("mouseSensitivity"), Min(0f)] private float lookSensitivity = 3f;
+    [SerializeField] private Button backButton;
 
     private Coroutine transitionRoutine;
     private Transform currentAnchor;
@@ -33,6 +35,7 @@ public class CameraNavigator : MonoBehaviour
 
     private void Start()
     {
+        SetLeaveFocusButtonVisible(false);
         SnapToAnchor(overviewAnchor);
     }
 
@@ -140,6 +143,7 @@ public class CameraNavigator : MonoBehaviour
 
         ResetLookOffset();
         currentAnchor = targetAnchor;
+        SetLeaveFocusButtonVisible(false);
 
         if (transitionRoutine != null)
         {
@@ -189,6 +193,18 @@ public class CameraNavigator : MonoBehaviour
         currentAnchor = targetAnchor;
         ResetLookOffset();
         mainCameraTransform.SetPositionAndRotation(targetAnchor.position, targetAnchor.rotation);
+        SetLeaveFocusButtonVisible(false);
+    }
+
+    public void LeaveFocus()
+    {
+        // Reserved for the later focused interaction layer; normal room navigation does not use Back.
+        SetLeaveFocusButtonVisible(false);
+    }
+
+    public void GoBack()
+    {
+        LeaveFocus();
     }
 
     private void ApplyLookRotation()
@@ -230,5 +246,14 @@ public class CameraNavigator : MonoBehaviour
     {
         lookYaw = 0f;
         lookPitch = 0f;
+    }
+
+    private void SetLeaveFocusButtonVisible(bool isVisible)
+    {
+        if (backButton != null)
+        {
+            backButton.gameObject.SetActive(isVisible);
+            backButton.interactable = isVisible;
+        }
     }
 }
