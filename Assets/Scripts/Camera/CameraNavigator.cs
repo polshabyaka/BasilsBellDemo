@@ -24,6 +24,11 @@ public class CameraNavigator : MonoBehaviour
     private Transform currentAnchor;
     private float lookYaw;
     private float lookPitch;
+    private bool lookAroundEnabled = true;
+    private bool debugNumberKeysBlocked;
+
+    public Transform CurrentAnchor => currentAnchor;
+    public bool IsTransitioning => transitionRoutine != null;
 
     private void Awake()
     {
@@ -56,7 +61,7 @@ public class CameraNavigator : MonoBehaviour
 
     private void HandleDebugNumberKeys()
     {
-        if (!enableDebugNumberKeys)
+        if (!enableDebugNumberKeys || debugNumberKeysBlocked)
         {
             return;
         }
@@ -89,7 +94,7 @@ public class CameraNavigator : MonoBehaviour
 
     private void HandleLookAround()
     {
-        if (mainCameraTransform == null || currentAnchor == null || transitionRoutine != null)
+        if (!lookAroundEnabled || mainCameraTransform == null || currentAnchor == null || transitionRoutine != null)
         {
             return;
         }
@@ -205,6 +210,21 @@ public class CameraNavigator : MonoBehaviour
     public void GoBack()
     {
         LeaveFocus();
+    }
+
+    public void SetLookAroundEnabled(bool isEnabled)
+    {
+        lookAroundEnabled = isEnabled;
+
+        if (!lookAroundEnabled)
+        {
+            ResetLookOffset();
+        }
+    }
+
+    public void SetDebugNumberKeysBlocked(bool isBlocked)
+    {
+        debugNumberKeysBlocked = isBlocked;
     }
 
     private void ApplyLookRotation()
