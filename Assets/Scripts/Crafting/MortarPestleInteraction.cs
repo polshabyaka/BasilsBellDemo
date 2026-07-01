@@ -4,6 +4,7 @@ using UnityEngine.UI;
 
 public class MortarPestleInteraction : MonoBehaviour
 {
+    [Header("References")]
     [SerializeField] private FocusModeController focusModeController;
     [SerializeField] private Camera interactionCamera;
     [SerializeField] private Transform mortarGrindArea;
@@ -14,14 +15,21 @@ public class MortarPestleInteraction : MonoBehaviour
     [SerializeField] private Collider grindInputCollider;
     [SerializeField] private MortarGrindingPrototype grindingPrototype;
     [SerializeField] private Text progressText;
+
+    [Header("Grind Area")]
     [SerializeField, Min(0.01f)] private float grindRadiusX = 0.32f;
     [SerializeField, Min(0.01f)] private float grindRadiusZ = 0.24f;
+
+    [Header("Pestle Pose")]
     [SerializeField, Range(1f, 89f)] private float minTiltAboveHorizontal = 50f;
     [SerializeField, Range(1f, 89f)] private float maxTiltAboveHorizontal = 75f;
     [SerializeField] private Vector3 rightHandLeanOffset = new Vector3(0.58f, 0.72f, -0.08f);
-    [SerializeField, Min(0.05f)] private float pestleLength = 1.04f;
-    [SerializeField, Min(0.01f)] private float pestleRadius = 0.06f;
-    [SerializeField, Min(0f)] private float progressPerMeter = 0.65f;
+    [Tooltip("Visual-only length of the pestle cylinder. Gameplay uses the contact point and grind area.")]
+    [SerializeField, Min(0.05f)] private float pestleLength = 0.78f;
+    [Tooltip("Visual-only radius of the pestle cylinder. Gameplay uses the contact point and grind area.")]
+    [SerializeField, Min(0.01f)] private float pestleRadius = 0.095f;
+    [Tooltip("Used only if no MortarGrindingPrototype is assigned.")]
+    [SerializeField, Min(0f)] private float fallbackGrindProgressPerUnit = 0.14f;
 
     private bool isDragging;
     private float grindingProgress;
@@ -34,7 +42,7 @@ public class MortarPestleInteraction : MonoBehaviour
         maxTiltAboveHorizontal = Mathf.Max(minTiltAboveHorizontal, maxTiltAboveHorizontal);
         pestleLength = Mathf.Max(0.05f, pestleLength);
         pestleRadius = Mathf.Max(0.01f, pestleRadius);
-        progressPerMeter = Mathf.Max(0f, progressPerMeter);
+        fallbackGrindProgressPerUnit = Mathf.Max(0f, fallbackGrindProgressPerUnit);
     }
 
     private void Awake()
@@ -62,6 +70,11 @@ public class MortarPestleInteraction : MonoBehaviour
     {
         if (!IsFocusActive())
         {
+            if (isDragging && grindingPrototype != null)
+            {
+                grindingPrototype.EndGrindingStroke();
+            }
+
             isDragging = false;
             if (grindingPrototype == null)
             {
@@ -79,6 +92,11 @@ public class MortarPestleInteraction : MonoBehaviour
         {
             isDragging = true;
             lastContactPosition = GetContactPosition();
+
+            if (grindingPrototype != null)
+            {
+                grindingPrototype.BeginGrindingStroke(lastContactPosition, mortarGrindArea, grindRadiusX, grindRadiusZ);
+            }
         }
 
         if (isDragging && Input.GetMouseButton(0))
@@ -88,6 +106,11 @@ public class MortarPestleInteraction : MonoBehaviour
 
         if (Input.GetMouseButtonUp(0))
         {
+            if (isDragging && grindingPrototype != null)
+            {
+                grindingPrototype.EndGrindingStroke();
+            }
+
             isDragging = false;
         }
     }
@@ -180,7 +203,7 @@ public class MortarPestleInteraction : MonoBehaviour
 
         if (isDragging)
         {
-            AddProgress(movementDistance);
+            AddProgress(nextContactPosition, movementDistance);
         }
 
         lastContactPosition = nextContactPosition;
@@ -269,7 +292,7 @@ public class MortarPestleInteraction : MonoBehaviour
         pestleVisual.localScale = new Vector3(pestleRadius, pestleLength * 0.5f, pestleRadius);
     }
 
-    private void AddProgress(float movementDistance)
+    private void AddProgress(Vector3 contactPosition, float movementDistance)
     {
         if (movementDistance <= 0.001f)
         {
@@ -278,11 +301,11 @@ public class MortarPestleInteraction : MonoBehaviour
 
         if (grindingPrototype != null)
         {
-            grindingPrototype.RegisterGrindingMovement(movementDistance);
+            grindingPrototype.RegisterGrindingContact(contactPosition, mortarGrindArea, grindRadiusX, grindRadiusZ);
             return;
         }
 
-        grindingProgress = Mathf.Clamp01(grindingProgress + movementDistance * progressPerMeter);
+        grindingProgress = Mathf.Clamp01(grindingProgress + movementDistance * fallbackGrindProgressPerUnit);
         UpdateProgressText();
     }
 

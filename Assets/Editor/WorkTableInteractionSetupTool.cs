@@ -403,9 +403,9 @@ public static class WorkTableInteractionSetupTool
         Undo.RecordObject(visualObject.transform, $"Update {PestleVisualName}");
         visualObject.SetActive(true);
         visualObject.transform.SetParent(visualRoot, false);
-        visualObject.transform.localPosition = Vector3.up * 0.52f;
+        visualObject.transform.localPosition = Vector3.up * 0.39f;
         visualObject.transform.localRotation = Quaternion.identity;
-        visualObject.transform.localScale = new Vector3(0.06f, 0.52f, 0.06f);
+        visualObject.transform.localScale = new Vector3(0.095f, 0.39f, 0.095f);
 
         EnsurePrimitiveVisual(visualObject, PrimitiveType.Cylinder, material);
         EnsureBoxCollider(visualObject);
@@ -553,7 +553,7 @@ public static class WorkTableInteractionSetupTool
         textRect.anchorMax = new Vector2(0f, 1f);
         textRect.pivot = new Vector2(0f, 1f);
         textRect.anchoredPosition = new Vector2(24f, -168f);
-        textRect.sizeDelta = new Vector2(280f, 44f);
+        textRect.sizeDelta = new Vector2(420f, 82f);
         textRect.localScale = Vector3.one;
 
         Undo.RecordObject(progressText, $"Configure {ProgressTextName}");
@@ -562,6 +562,8 @@ public static class WorkTableInteractionSetupTool
         progressText.alignment = TextAnchor.MiddleLeft;
         progressText.color = Color.black;
         progressText.raycastTarget = false;
+        progressText.horizontalOverflow = HorizontalWrapMode.Overflow;
+        progressText.verticalOverflow = VerticalWrapMode.Overflow;
 
         if (progressText.font == null)
         {
@@ -623,9 +625,15 @@ public static class WorkTableInteractionSetupTool
         serializedPrototype.FindProperty("rawHerbRoot").objectReferenceValue = rawHerbRoot;
         serializedPrototype.FindProperty("powderRoot").objectReferenceValue = powderRoot;
         serializedPrototype.FindProperty("progressText").objectReferenceValue = progressText;
-        serializedPrototype.FindProperty("progressPerMeter").floatValue = 0.65f;
+        serializedPrototype.FindProperty("minEffectiveRadius").floatValue = 0.25f;
+        serializedPrototype.FindProperty("maxEffectiveRadius").floatValue = 0.95f;
+        serializedPrototype.FindProperty("angularProgressMultiplier").floatValue = 0.00055f;
+        serializedPrototype.FindProperty("maxProgressPerSecond").floatValue = 0.18f;
+        serializedPrototype.FindProperty("directionChangePenalty").floatValue = 0.2f;
+        serializedPrototype.FindProperty("minAngularDeltaToCount").floatValue = 0.5f;
         serializedPrototype.FindProperty("rawHerbEndScale").floatValue = 0.25f;
         serializedPrototype.FindProperty("powderStartScale").floatValue = 0.15f;
+        serializedPrototype.FindProperty("showMotionHint").boolValue = true;
         serializedPrototype.FindProperty("enableDebugResetKey").boolValue = true;
         serializedPrototype.ApplyModifiedProperties();
         EditorUtility.SetDirty(grindingPrototype);
@@ -668,9 +676,9 @@ public static class WorkTableInteractionSetupTool
         serializedInteraction.FindProperty("minTiltAboveHorizontal").floatValue = 50f;
         serializedInteraction.FindProperty("maxTiltAboveHorizontal").floatValue = 75f;
         serializedInteraction.FindProperty("rightHandLeanOffset").vector3Value = new Vector3(0.58f, 0.72f, -0.08f);
-        serializedInteraction.FindProperty("pestleLength").floatValue = 1.04f;
-        serializedInteraction.FindProperty("pestleRadius").floatValue = 0.06f;
-        serializedInteraction.FindProperty("progressPerMeter").floatValue = 0.65f;
+        serializedInteraction.FindProperty("pestleLength").floatValue = 0.78f;
+        serializedInteraction.FindProperty("pestleRadius").floatValue = 0.095f;
+        serializedInteraction.FindProperty("fallbackGrindProgressPerUnit").floatValue = 0.14f;
         serializedInteraction.ApplyModifiedProperties();
         EditorUtility.SetDirty(interaction);
 
