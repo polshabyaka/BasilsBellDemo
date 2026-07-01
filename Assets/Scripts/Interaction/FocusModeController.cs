@@ -12,6 +12,8 @@ public class FocusModeController : MonoBehaviour
 
     private bool isInFocusMode;
 
+    public bool IsInFocusMode => isInFocusMode;
+
     private void Start()
     {
         SetFocusModeActive(false);
