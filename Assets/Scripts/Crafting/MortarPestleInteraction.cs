@@ -12,6 +12,7 @@ public class MortarPestleInteraction : MonoBehaviour
     [SerializeField] private Transform pestleVisual;
     [SerializeField] private Transform pestleHandleGuideRightHand;
     [SerializeField] private Collider grindInputCollider;
+    [SerializeField] private MortarGrindingPrototype grindingPrototype;
     [SerializeField] private Text progressText;
     [SerializeField, Min(0.01f)] private float grindRadiusX = 0.32f;
     [SerializeField, Min(0.01f)] private float grindRadiusZ = 0.24f;
@@ -62,11 +63,17 @@ public class MortarPestleInteraction : MonoBehaviour
         if (!IsFocusActive())
         {
             isDragging = false;
-            SetProgressTextVisible(false);
+            if (grindingPrototype == null)
+            {
+                SetProgressTextVisible(false);
+            }
             return;
         }
 
-        SetProgressTextVisible(true);
+        if (grindingPrototype == null)
+        {
+            SetProgressTextVisible(true);
+        }
 
         if (Input.GetMouseButtonDown(0) && CanStartDrag())
         {
@@ -266,6 +273,12 @@ public class MortarPestleInteraction : MonoBehaviour
     {
         if (movementDistance <= 0.001f)
         {
+            return;
+        }
+
+        if (grindingPrototype != null)
+        {
+            grindingPrototype.RegisterGrindingMovement(movementDistance);
             return;
         }
 

@@ -16,6 +16,8 @@ public static class WorkTableInteractionSetupTool
     private const string PestleVisualRootName = "PestleVisualRoot";
     private const string PestleVisualName = "Pestle_Visual";
     private const string PestleHandleGuideName = "PestleHandleGuide_RightHand";
+    private const string RawHerbRootName = "RawHerb_InMortar";
+    private const string HerbPowderRootName = "HerbPowder_InMortar";
     private const string UiRootName = "_UI";
     private const string CanvasName = "ShopUI_Canvas";
     private const string ProgressTextName = "MortarProgressText";
@@ -23,6 +25,8 @@ public static class WorkTableInteractionSetupTool
     private const string MortarMaterialPath = MaterialsFolder + "/MAT_Blockout_Mortar_Debug.mat";
     private const string PestleMaterialPath = MaterialsFolder + "/MAT_Blockout_Pestle_Debug.mat";
     private const string GrindAreaMaterialPath = MaterialsFolder + "/MAT_Blockout_GrindArea_Debug.mat";
+    private const string RawHerbMaterialPath = MaterialsFolder + "/MAT_Blockout_RawHerb_Debug.mat";
+    private const string PowderMaterialPath = MaterialsFolder + "/MAT_Blockout_HerbPowder_Debug.mat";
 
     [MenuItem("Basil's Bell/Scenes/Setup WorkTable Mortar Prototype")]
     public static void SetupWorkTableMortarPrototype()
@@ -65,6 +69,8 @@ public static class WorkTableInteractionSetupTool
         Material mortarMaterial = GetOrCreateMaterial(MortarMaterialPath, "MAT_Blockout_Mortar_Debug", new Color(0.54f, 0.53f, 0.49f));
         Material pestleMaterial = GetOrCreateMaterial(PestleMaterialPath, "MAT_Blockout_Pestle_Debug", new Color(0.34f, 0.28f, 0.22f));
         Material grindAreaMaterial = GetOrCreateTransparentMaterial(GrindAreaMaterialPath, "MAT_Blockout_GrindArea_Debug", new Color(0.25f, 0.7f, 1f, 0.25f));
+        Material rawHerbMaterial = GetOrCreateMaterial(RawHerbMaterialPath, "MAT_Blockout_RawHerb_Debug", new Color(0.22f, 0.58f, 0.20f));
+        Material powderMaterial = GetOrCreateMaterial(PowderMaterialPath, "MAT_Blockout_HerbPowder_Debug", new Color(0.58f, 0.74f, 0.38f));
 
         GameObject mortar = CreateOrUpdatePrimitive(
             MortarName,
@@ -106,12 +112,21 @@ public static class WorkTableInteractionSetupTool
             new Vector3(0.58f, 1.96f, -0.08f),
             Quaternion.identity);
 
+        GameObject rawHerbRoot = CreateOrUpdateRawHerb(prototypeRoot, rawHerbMaterial);
+        GameObject powderRoot = CreateOrUpdatePowder(prototypeRoot, powderMaterial);
         GameObject pestleVisual = CreateOrUpdatePestleVisual(prototypeRoot, visualRoot, pestleMaterial);
         Text progressText = CreateOrUpdateProgressText(uiRoot);
         if (progressText == null)
         {
             return;
         }
+
+        MortarGrindingPrototype grindingPrototype = ConfigureMortarGrindingPrototype(
+            prototypeRoot.gameObject,
+            focusModeController,
+            rawHerbRoot,
+            powderRoot,
+            progressText);
 
         MortarPestleInteraction interaction = ConfigureMortarPestleInteraction(
             visualRoot.gameObject,
@@ -121,6 +136,7 @@ public static class WorkTableInteractionSetupTool
             pestleVisual.transform,
             handleGuide,
             grindArea.GetComponent<Collider>(),
+            grindingPrototype,
             focusModeController,
             mainCamera,
             progressText);
@@ -138,12 +154,15 @@ public static class WorkTableInteractionSetupTool
             visualRoot.gameObject,
             pestleVisual,
             handleGuide.gameObject,
+            rawHerbRoot,
+            powderRoot,
+            grindingPrototype,
             interaction
         };
 
         EditorUtility.DisplayDialog(
             "WorkTable Mortar Prototype Ready",
-            "Created or updated the mortar grind area, pestle contact point, right-hand guide, and pestle visual.",
+            "Created or updated the mortar, pestle, raw herb, powder, and grinding feedback prototype.",
             "OK");
     }
 
@@ -254,6 +273,103 @@ public static class WorkTableInteractionSetupTool
         locatorObject.transform.localRotation = localRotation;
         locatorObject.transform.localScale = Vector3.one;
         return locatorObject.transform;
+    }
+
+    private static GameObject CreateOrUpdateRawHerb(Transform prototypeRoot, Material rawHerbMaterial)
+    {
+        Transform rawHerbRoot = CreateOrUpdateLocator(
+            prototypeRoot,
+            RawHerbRootName,
+            new Vector3(0f, 1.285f, 0f),
+            Quaternion.identity);
+
+        rawHerbRoot.gameObject.SetActive(true);
+        CreateOrUpdatePrimitive(
+            "RawHerb_Leaf_01",
+            rawHerbRoot,
+            PrimitiveType.Cube,
+            new Vector3(-0.09f, 0f, 0.02f),
+            Quaternion.Euler(0f, 24f, 0f),
+            new Vector3(0.16f, 0.018f, 0.045f),
+            rawHerbMaterial,
+            false,
+            false);
+        CreateOrUpdatePrimitive(
+            "RawHerb_Leaf_02",
+            rawHerbRoot,
+            PrimitiveType.Cube,
+            new Vector3(0.08f, 0.005f, -0.02f),
+            Quaternion.Euler(0f, -35f, 0f),
+            new Vector3(0.14f, 0.018f, 0.04f),
+            rawHerbMaterial,
+            false,
+            false);
+        CreateOrUpdatePrimitive(
+            "RawHerb_Leaf_03",
+            rawHerbRoot,
+            PrimitiveType.Cube,
+            new Vector3(0f, 0.01f, 0.08f),
+            Quaternion.Euler(0f, 82f, 0f),
+            new Vector3(0.13f, 0.018f, 0.038f),
+            rawHerbMaterial,
+            false,
+            false);
+        CreateOrUpdatePrimitive(
+            "RawHerb_Leaf_04",
+            rawHerbRoot,
+            PrimitiveType.Cube,
+            new Vector3(0.02f, 0.015f, -0.09f),
+            Quaternion.Euler(0f, 8f, 0f),
+            new Vector3(0.12f, 0.018f, 0.038f),
+            rawHerbMaterial,
+            false,
+            false);
+
+        return rawHerbRoot.gameObject;
+    }
+
+    private static GameObject CreateOrUpdatePowder(Transform prototypeRoot, Material powderMaterial)
+    {
+        Transform powderRoot = CreateOrUpdateLocator(
+            prototypeRoot,
+            HerbPowderRootName,
+            new Vector3(0f, 1.275f, 0f),
+            Quaternion.identity);
+
+        powderRoot.gameObject.SetActive(true);
+        CreateOrUpdatePrimitive(
+            "HerbPowder_Patch",
+            powderRoot,
+            PrimitiveType.Cylinder,
+            Vector3.zero,
+            Quaternion.identity,
+            new Vector3(0.34f, 0.006f, 0.24f),
+            powderMaterial,
+            false,
+            false);
+        CreateOrUpdatePrimitive(
+            "HerbPowder_Crumb_01",
+            powderRoot,
+            PrimitiveType.Sphere,
+            new Vector3(-0.09f, 0.012f, 0.04f),
+            Quaternion.identity,
+            new Vector3(0.045f, 0.012f, 0.045f),
+            powderMaterial,
+            false,
+            false);
+        CreateOrUpdatePrimitive(
+            "HerbPowder_Crumb_02",
+            powderRoot,
+            PrimitiveType.Sphere,
+            new Vector3(0.10f, 0.012f, -0.03f),
+            Quaternion.identity,
+            new Vector3(0.04f, 0.012f, 0.04f),
+            powderMaterial,
+            false,
+            false);
+
+        powderRoot.gameObject.SetActive(false);
+        return powderRoot.gameObject;
     }
 
     private static GameObject CreateOrUpdatePestleVisual(Transform prototypeRoot, Transform visualRoot, Material material)
@@ -489,6 +605,34 @@ public static class WorkTableInteractionSetupTool
         return canvas;
     }
 
+    private static MortarGrindingPrototype ConfigureMortarGrindingPrototype(
+        GameObject prototypeRoot,
+        FocusModeController focusModeController,
+        GameObject rawHerbRoot,
+        GameObject powderRoot,
+        Text progressText)
+    {
+        MortarGrindingPrototype grindingPrototype = prototypeRoot.GetComponent<MortarGrindingPrototype>();
+        if (grindingPrototype == null)
+        {
+            grindingPrototype = Undo.AddComponent<MortarGrindingPrototype>(prototypeRoot);
+        }
+
+        SerializedObject serializedPrototype = new SerializedObject(grindingPrototype);
+        serializedPrototype.FindProperty("focusModeController").objectReferenceValue = focusModeController;
+        serializedPrototype.FindProperty("rawHerbRoot").objectReferenceValue = rawHerbRoot;
+        serializedPrototype.FindProperty("powderRoot").objectReferenceValue = powderRoot;
+        serializedPrototype.FindProperty("progressText").objectReferenceValue = progressText;
+        serializedPrototype.FindProperty("progressPerMeter").floatValue = 0.65f;
+        serializedPrototype.FindProperty("rawHerbEndScale").floatValue = 0.25f;
+        serializedPrototype.FindProperty("powderStartScale").floatValue = 0.15f;
+        serializedPrototype.FindProperty("enableDebugResetKey").boolValue = true;
+        serializedPrototype.ApplyModifiedProperties();
+        EditorUtility.SetDirty(grindingPrototype);
+
+        return grindingPrototype;
+    }
+
     private static MortarPestleInteraction ConfigureMortarPestleInteraction(
         GameObject interactionObject,
         Transform grindArea,
@@ -497,6 +641,7 @@ public static class WorkTableInteractionSetupTool
         Transform pestleVisual,
         Transform handleGuide,
         Collider grindCollider,
+        MortarGrindingPrototype grindingPrototype,
         FocusModeController focusModeController,
         Camera mainCamera,
         Text progressText)
@@ -516,6 +661,7 @@ public static class WorkTableInteractionSetupTool
         serializedInteraction.FindProperty("pestleVisual").objectReferenceValue = pestleVisual;
         serializedInteraction.FindProperty("pestleHandleGuideRightHand").objectReferenceValue = handleGuide;
         serializedInteraction.FindProperty("grindInputCollider").objectReferenceValue = grindCollider;
+        serializedInteraction.FindProperty("grindingPrototype").objectReferenceValue = grindingPrototype;
         serializedInteraction.FindProperty("progressText").objectReferenceValue = progressText;
         serializedInteraction.FindProperty("grindRadiusX").floatValue = 0.32f;
         serializedInteraction.FindProperty("grindRadiusZ").floatValue = 0.24f;
