@@ -38,6 +38,8 @@ public class MortarGrindingPrototype : MonoBehaviour
 
     public float Progress => grindingProgress;
     public bool IsComplete => isComplete;
+    public float MinEffectiveRadius => minEffectiveRadius;
+    public float MaxEffectiveRadius => maxEffectiveRadius;
 
     private void OnValidate()
     {

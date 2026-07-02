@@ -11,11 +11,14 @@ public static class WorkTableInteractionSetupTool
     private const string WorkTableRootName = "WorkTable_Blockout";
     private const string PrototypeRootName = "WorkTableFocus_Prototype";
     private const string MortarName = "Mortar_Blockout";
+    private const string MortarGrindCenterName = "MortarGrindCenter";
     private const string MortarGrindAreaName = "MortarGrindArea";
     private const string PestleContactPointName = "PestleContactPoint";
     private const string PestleVisualRootName = "PestleVisualRoot";
     private const string PestleVisualName = "Pestle_Visual";
     private const string PestleHandleGuideName = "PestleHandleGuide_RightHand";
+    private const string PestleRestPointName = "PestleRestPoint";
+    private const string PestleWorkPosePointName = "PestleWorkPosePoint";
     private const string RawHerbRootName = "RawHerb_InMortar";
     private const string HerbPowderRootName = "HerbPowder_InMortar";
     private const string UiRootName = "_UI";
@@ -83,11 +86,17 @@ public static class WorkTableInteractionSetupTool
             true,
             false);
 
+        Transform grindCenter = CreateOrUpdateLocator(
+            prototypeRoot,
+            MortarGrindCenterName,
+            new Vector3(0f, 1.24f, 0f),
+            Quaternion.identity);
+
         GameObject grindArea = CreateOrUpdatePrimitive(
             MortarGrindAreaName,
             prototypeRoot,
             PrimitiveType.Cylinder,
-            new Vector3(0f, 1.24f, 0f),
+            grindCenter.localPosition,
             Quaternion.identity,
             new Vector3(0.64f, 0.012f, 0.48f),
             grindAreaMaterial,
@@ -97,13 +106,19 @@ public static class WorkTableInteractionSetupTool
         Transform contactPoint = CreateOrUpdateLocator(
             prototypeRoot,
             PestleContactPointName,
-            new Vector3(0f, 1.24f, 0f),
+            new Vector3(-0.68f, 1.19f, -0.22f),
             Quaternion.identity);
 
-        Transform visualRoot = CreateOrUpdateLocator(
+        Transform restPoint = CreateOrUpdateLocator(
             prototypeRoot,
-            PestleVisualRootName,
-            contactPoint.localPosition,
+            PestleRestPointName,
+            new Vector3(-0.68f, 1.19f, -0.22f),
+            Quaternion.Euler(0f, 18f, -88f));
+
+        Transform workPosePoint = CreateOrUpdateLocator(
+            prototypeRoot,
+            PestleWorkPosePointName,
+            new Vector3(0.16f, 1.24f, -0.03f),
             Quaternion.identity);
 
         Transform handleGuide = CreateOrUpdateLocator(
@@ -111,6 +126,12 @@ public static class WorkTableInteractionSetupTool
             PestleHandleGuideName,
             new Vector3(0.58f, 1.96f, -0.08f),
             Quaternion.identity);
+
+        Transform visualRoot = CreateOrUpdateLocator(
+            prototypeRoot,
+            PestleVisualRootName,
+            restPoint.localPosition,
+            restPoint.localRotation);
 
         GameObject rawHerbRoot = CreateOrUpdateRawHerb(prototypeRoot, rawHerbMaterial);
         GameObject powderRoot = CreateOrUpdatePowder(prototypeRoot, powderMaterial);
@@ -131,10 +152,13 @@ public static class WorkTableInteractionSetupTool
         MortarPestleInteraction interaction = ConfigureMortarPestleInteraction(
             visualRoot.gameObject,
             grindArea.transform,
+            grindCenter,
             contactPoint,
             visualRoot,
             pestleVisual.transform,
             handleGuide,
+            restPoint,
+            workPosePoint,
             grindArea.GetComponent<Collider>(),
             grindingPrototype,
             focusModeController,
@@ -149,11 +173,14 @@ public static class WorkTableInteractionSetupTool
         Selection.objects = new Object[]
         {
             mortar,
+            grindCenter.gameObject,
             grindArea,
             contactPoint.gameObject,
             visualRoot.gameObject,
             pestleVisual,
             handleGuide.gameObject,
+            restPoint.gameObject,
+            workPosePoint.gameObject,
             rawHerbRoot,
             powderRoot,
             grindingPrototype,
@@ -162,7 +189,7 @@ public static class WorkTableInteractionSetupTool
 
         EditorUtility.DisplayDialog(
             "WorkTable Mortar Prototype Ready",
-            "Created or updated the mortar, pestle, raw herb, powder, and grinding feedback prototype.",
+            "Created or updated the mortar, grind center, pestle, raw herb, powder, and grinding feedback prototype.",
             "OK");
     }
 
@@ -644,10 +671,13 @@ public static class WorkTableInteractionSetupTool
     private static MortarPestleInteraction ConfigureMortarPestleInteraction(
         GameObject interactionObject,
         Transform grindArea,
+        Transform grindCenter,
         Transform contactPoint,
         Transform visualRoot,
         Transform pestleVisual,
         Transform handleGuide,
+        Transform restPoint,
+        Transform workPosePoint,
         Collider grindCollider,
         MortarGrindingPrototype grindingPrototype,
         FocusModeController focusModeController,
@@ -664,21 +694,28 @@ public static class WorkTableInteractionSetupTool
         serializedInteraction.FindProperty("focusModeController").objectReferenceValue = focusModeController;
         serializedInteraction.FindProperty("interactionCamera").objectReferenceValue = mainCamera;
         serializedInteraction.FindProperty("mortarGrindArea").objectReferenceValue = grindArea;
+        serializedInteraction.FindProperty("mortarGrindCenter").objectReferenceValue = grindCenter;
         serializedInteraction.FindProperty("pestleContactPoint").objectReferenceValue = contactPoint;
         serializedInteraction.FindProperty("pestleVisualRoot").objectReferenceValue = visualRoot;
         serializedInteraction.FindProperty("pestleVisual").objectReferenceValue = pestleVisual;
         serializedInteraction.FindProperty("pestleHandleGuideRightHand").objectReferenceValue = handleGuide;
+        serializedInteraction.FindProperty("pestleRestPoint").objectReferenceValue = restPoint;
+        serializedInteraction.FindProperty("pestleWorkPosePoint").objectReferenceValue = workPosePoint;
         serializedInteraction.FindProperty("grindInputCollider").objectReferenceValue = grindCollider;
         serializedInteraction.FindProperty("grindingPrototype").objectReferenceValue = grindingPrototype;
         serializedInteraction.FindProperty("progressText").objectReferenceValue = progressText;
         serializedInteraction.FindProperty("grindRadiusX").floatValue = 0.32f;
         serializedInteraction.FindProperty("grindRadiusZ").floatValue = 0.24f;
+        serializedInteraction.FindProperty("grindAreaPadding").floatValue = 0.04f;
+        serializedInteraction.FindProperty("useScreenSpaceGrindingInput").boolValue = true;
         serializedInteraction.FindProperty("minTiltAboveHorizontal").floatValue = 50f;
         serializedInteraction.FindProperty("maxTiltAboveHorizontal").floatValue = 75f;
         serializedInteraction.FindProperty("rightHandLeanOffset").vector3Value = new Vector3(0.58f, 0.72f, -0.08f);
         serializedInteraction.FindProperty("pestleLength").floatValue = 0.78f;
         serializedInteraction.FindProperty("pestleRadius").floatValue = 0.095f;
         serializedInteraction.FindProperty("fallbackGrindProgressPerUnit").floatValue = 0.14f;
+        serializedInteraction.FindProperty("pickupDuration").floatValue = 0.22f;
+        serializedInteraction.FindProperty("returnDuration").floatValue = 0.3f;
         serializedInteraction.ApplyModifiedProperties();
         EditorUtility.SetDirty(interaction);
 
@@ -699,8 +736,6 @@ public static class WorkTableInteractionSetupTool
     {
         DisableChildIfPresent(prototypeRoot, "MortarGrindingPivot");
         DisableChildIfPresent(prototypeRoot, "Pestle_Pivot");
-        DisableChildIfPresent(prototypeRoot, "PestleRestPoint");
-        DisableChildIfPresent(prototypeRoot, "MortarGrindCenter");
 
         Transform legacyPestle = prototypeRoot.Find("Pestle_Blockout");
         if (legacyPestle != null && legacyPestle != pestleVisual && legacyPestle != visualRoot)
