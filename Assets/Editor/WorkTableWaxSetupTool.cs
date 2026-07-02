@@ -13,6 +13,7 @@ public static class WorkTableWaxSetupTool
     private const string WaxChunkName = "WaxChunk_Blockout";
     private const string MeltedWaxName = "MeltedWax_Blockout";
     private const string HeatSourceName = "HeatSource_Blockout";
+    private const string HeatVisualName = "HeatVisual_Blockout";
     private const string UiRootName = "_UI";
     private const string CanvasName = "ShopUI_Canvas";
     private const string ProgressTextName = "WaxMeltingProgressText";
@@ -21,6 +22,7 @@ public static class WorkTableWaxSetupTool
     private const string WaxChunkMaterialPath = MaterialsFolder + "/MAT_Blockout_WaxChunk_Debug.mat";
     private const string MeltedWaxMaterialPath = MaterialsFolder + "/MAT_Blockout_MeltedWax_Debug.mat";
     private const string HeatSourceMaterialPath = MaterialsFolder + "/MAT_Blockout_HeatSource_Debug.mat";
+    private const string HeatVisualMaterialPath = MaterialsFolder + "/MAT_Blockout_HeatVisual_Debug.mat";
 
     [MenuItem("Basil's Bell/Scenes/Setup WorkTable Wax Prototype")]
     public static void SetupWorkTableWaxPrototype()
@@ -64,6 +66,7 @@ public static class WorkTableWaxSetupTool
         Material waxChunkMaterial = GetOrCreateMaterial(WaxChunkMaterialPath, "MAT_Blockout_WaxChunk_Debug", new Color(0.94f, 0.86f, 0.58f));
         Material meltedWaxMaterial = GetOrCreateMaterial(MeltedWaxMaterialPath, "MAT_Blockout_MeltedWax_Debug", new Color(1f, 0.72f, 0.22f));
         Material heatSourceMaterial = GetOrCreateMaterial(HeatSourceMaterialPath, "MAT_Blockout_HeatSource_Debug", new Color(0.86f, 0.26f, 0.14f));
+        Material heatVisualMaterial = GetOrCreateMaterial(HeatVisualMaterialPath, "MAT_Blockout_HeatVisual_Debug", new Color(1f, 0.46f, 0.08f));
 
         GameObject heatSource = CreateOrUpdatePrimitive(
             HeatSourceName,
@@ -75,6 +78,18 @@ public static class WorkTableWaxSetupTool
             heatSourceMaterial,
             true,
             true);
+
+        GameObject heatVisual = CreateOrUpdatePrimitive(
+            HeatVisualName,
+            prototypeRoot,
+            PrimitiveType.Sphere,
+            new Vector3(0.78f, 1.135f, 0.18f),
+            Quaternion.identity,
+            new Vector3(0.16f, 0.055f, 0.16f),
+            heatVisualMaterial,
+            false,
+            false);
+        heatVisual.SetActive(false);
 
         GameObject cup = CreateOrUpdatePrimitive(
             CupName,
@@ -126,6 +141,8 @@ public static class WorkTableWaxSetupTool
             waxChunk.transform,
             meltedWax,
             meltedWax.transform,
+            heatVisual,
+            heatVisual.transform,
             progressText);
 
         EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
@@ -137,13 +154,14 @@ public static class WorkTableWaxSetupTool
             waxChunk,
             meltedWax,
             heatSource,
+            heatVisual,
             progressText,
             waxPrototype
         };
 
         EditorUtility.DisplayDialog(
             "WorkTable Wax Prototype Ready",
-            "Created or updated the wax cup, wax chunk, melted wax, heat source, and melting progress UI.",
+            "Created or updated the wax cup, wax chunk, melted wax, heat source, heat visual, and melting progress UI.",
             "OK");
     }
 
@@ -369,11 +387,11 @@ public static class WorkTableWaxSetupTool
         textRect.anchorMax = new Vector2(0f, 1f);
         textRect.pivot = new Vector2(0f, 1f);
         textRect.anchoredPosition = new Vector2(24f, -260f);
-        textRect.sizeDelta = new Vector2(420f, 72f);
+        textRect.sizeDelta = new Vector2(420f, 92f);
         textRect.localScale = Vector3.one;
 
         Undo.RecordObject(progressText, $"Configure {ProgressTextName}");
-        progressText.text = "Wax melting: 0%";
+        progressText.text = "Wax: 0%\nHeat: Off";
         progressText.fontSize = 30;
         progressText.alignment = TextAnchor.MiddleLeft;
         progressText.color = Color.black;
@@ -433,6 +451,8 @@ public static class WorkTableWaxSetupTool
         Transform waxChunkVisual,
         GameObject meltedWaxRoot,
         Transform meltedWaxVisual,
+        GameObject heatVisualRoot,
+        Transform heatVisual,
         Text progressText)
     {
         WaxMeltingPrototype waxPrototype = prototypeRoot.GetComponent<WaxMeltingPrototype>();
@@ -450,11 +470,16 @@ public static class WorkTableWaxSetupTool
         serializedPrototype.FindProperty("waxChunkVisual").objectReferenceValue = waxChunkVisual;
         serializedPrototype.FindProperty("meltedWaxRoot").objectReferenceValue = meltedWaxRoot;
         serializedPrototype.FindProperty("meltedWaxVisual").objectReferenceValue = meltedWaxVisual;
+        serializedPrototype.FindProperty("heatVisualRoot").objectReferenceValue = heatVisualRoot;
+        serializedPrototype.FindProperty("heatVisual").objectReferenceValue = heatVisual;
         serializedPrototype.FindProperty("progressText").objectReferenceValue = progressText;
-        serializedPrototype.FindProperty("meltDuration").floatValue = 5.5f;
+        serializedPrototype.FindProperty("meltDuration").floatValue = 10f;
         serializedPrototype.FindProperty("waxChunkEndScale").floatValue = 0.18f;
         serializedPrototype.FindProperty("meltedWaxStartScale").floatValue = 0.08f;
         serializedPrototype.FindProperty("waxChunkLowerOffset").vector3Value = new Vector3(0f, -0.08f, 0f);
+        serializedPrototype.FindProperty("isHeating").boolValue = false;
+        serializedPrototype.FindProperty("heatPulseSpeed").floatValue = 5f;
+        serializedPrototype.FindProperty("heatPulseScale").floatValue = 0.12f;
         serializedPrototype.FindProperty("enableDebugResetKey").boolValue = true;
         serializedPrototype.ApplyModifiedProperties();
         EditorUtility.SetDirty(waxPrototype);

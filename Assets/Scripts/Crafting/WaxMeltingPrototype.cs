@@ -20,13 +20,20 @@ public class WaxMeltingPrototype : MonoBehaviour
     [SerializeField] private Transform waxChunkVisual;
     [SerializeField] private GameObject meltedWaxRoot;
     [SerializeField] private Transform meltedWaxVisual;
+    [SerializeField] private GameObject heatVisualRoot;
+    [SerializeField] private Transform heatVisual;
     [SerializeField] private Text progressText;
 
     [Header("Melting")]
-    [SerializeField, Min(0.1f)] private float meltDuration = 5.5f;
+    [SerializeField, Min(0.1f)] private float meltDuration = 10f;
     [SerializeField, Range(0.01f, 1f)] private float waxChunkEndScale = 0.18f;
     [SerializeField, Range(0.01f, 1f)] private float meltedWaxStartScale = 0.08f;
     [SerializeField] private Vector3 waxChunkLowerOffset = new Vector3(0f, -0.08f, 0f);
+
+    [Header("Heat Visual")]
+    [SerializeField] private bool isHeating;
+    [SerializeField, Min(0f)] private float heatPulseSpeed = 5f;
+    [SerializeField, Range(0f, 0.5f)] private float heatPulseScale = 0.12f;
 
     [Header("Debug")]
     [SerializeField] private bool enableDebugResetKey = true;
@@ -36,11 +43,12 @@ public class WaxMeltingPrototype : MonoBehaviour
     private Vector3 waxChunkInitialScale = Vector3.one;
     private Vector3 waxChunkInitialLocalPosition;
     private Vector3 meltedWaxInitialScale = Vector3.one;
+    private Vector3 heatVisualInitialScale = Vector3.one;
     private float meltingProgress;
-    private bool isHoldingHeat;
 
     public float Progress => meltingProgress;
     public bool IsMelted => waxState == WaxState.Melted;
+    public bool IsHeating => isHeating;
 
     private void OnValidate()
     {
@@ -64,6 +72,11 @@ public class WaxMeltingPrototype : MonoBehaviour
         {
             meltedWaxInitialScale = meltedWaxVisual.localScale;
         }
+
+        if (heatVisual != null)
+        {
+            heatVisualInitialScale = heatVisual.localScale;
+        }
     }
 
     private void Start()
@@ -76,7 +89,7 @@ public class WaxMeltingPrototype : MonoBehaviour
     {
         if (!IsFocusActive())
         {
-            isHoldingHeat = false;
+            SetHeating(false);
             SetProgressTextVisible(false);
             return;
         }
@@ -91,18 +104,21 @@ public class WaxMeltingPrototype : MonoBehaviour
 
         UpdateInput();
 
-        if (isHoldingHeat && waxState != WaxState.Melted)
+        if (isHeating && waxState != WaxState.Melted)
         {
             AddMeltingProgress(Time.deltaTime / meltDuration);
         }
+
+        UpdateHeatVisual();
     }
 
     public void ResetPrototype()
     {
         waxState = WaxState.Solid;
         meltingProgress = 0f;
-        isHoldingHeat = false;
+        isHeating = false;
         ApplyVisualState();
+        UpdateHeatVisual();
         UpdateProgressText();
     }
 
@@ -113,23 +129,13 @@ public class WaxMeltingPrototype : MonoBehaviour
 
     private void UpdateInput()
     {
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonDown(0) && CanToggleHeat())
         {
-            isHoldingHeat = CanStartMelting();
-
-            if (isHoldingHeat && waxState == WaxState.Solid)
-            {
-                waxState = WaxState.Melting;
-            }
-        }
-
-        if (!Input.GetMouseButton(0))
-        {
-            isHoldingHeat = false;
+            SetHeating(!isHeating);
         }
     }
 
-    private bool CanStartMelting()
+    private bool CanToggleHeat()
     {
         if (interactionCamera == null)
         {
@@ -162,10 +168,27 @@ public class WaxMeltingPrototype : MonoBehaviour
         if (meltingProgress >= 1f)
         {
             waxState = WaxState.Melted;
-            isHoldingHeat = false;
         }
 
         ApplyVisualState();
+        UpdateProgressText();
+    }
+
+    private void SetHeating(bool shouldHeat)
+    {
+        if (isHeating == shouldHeat)
+        {
+            return;
+        }
+
+        isHeating = shouldHeat;
+
+        if (waxState != WaxState.Melted)
+        {
+            waxState = isHeating ? WaxState.Melting : WaxState.Solid;
+        }
+
+        UpdateHeatVisual();
         UpdateProgressText();
     }
 
@@ -197,6 +220,28 @@ public class WaxMeltingPrototype : MonoBehaviour
         }
     }
 
+    private void UpdateHeatVisual()
+    {
+        if (heatVisualRoot != null && heatVisualRoot.activeSelf != isHeating)
+        {
+            heatVisualRoot.SetActive(isHeating);
+        }
+
+        if (heatVisual == null)
+        {
+            return;
+        }
+
+        if (!isHeating)
+        {
+            heatVisual.localScale = heatVisualInitialScale;
+            return;
+        }
+
+        float pulse = 1f + Mathf.Sin(Time.time * heatPulseSpeed) * heatPulseScale;
+        heatVisual.localScale = heatVisualInitialScale * pulse;
+    }
+
     private void UpdateProgressText()
     {
         if (progressText == null)
@@ -205,8 +250,13 @@ public class WaxMeltingPrototype : MonoBehaviour
         }
 
         progressText.text = waxState == WaxState.Melted
-            ? "Melted wax ready"
-            : $"Wax melting: {Mathf.RoundToInt(meltingProgress * 100f)}%";
+            ? $"Melted wax ready\nHeat: {GetHeatText()}"
+            : $"Wax: {Mathf.RoundToInt(meltingProgress * 100f)}%\nHeat: {GetHeatText()}";
+    }
+
+    private string GetHeatText()
+    {
+        return isHeating ? "On" : "Off";
     }
 
     private void SetProgressTextVisible(bool isVisible)
